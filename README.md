@@ -23,7 +23,7 @@ http://localhost:3007/NotifyUsers
     "data": {
         "email": "syed5511@gmail.com",
         "delivery_type": "home delivery",
-        "kitchen_name": "9001postmankitchen",
+        "kitchen_name": "dummy123",
         "internal_order_status": "order accepted by kitchen",
         "joined_order_no": "11/30/2024-JOIN9619403833", // Sent key joined_order_no if updating join order 
         "order_no": "11/30/2024-MEAL1511952339", // sent order_no when its NOT join order
