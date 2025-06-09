@@ -16,8 +16,8 @@ const connectionPing = chalk.hex('#acfa70')
 const logger = require('./Middleware/logger');
 const error = chalk.bold.redBright;
 
-const db = require('./Middleware/db');
-const db2 = require('./Middleware/db2')
+// const db = require('./Middleware/db');
+// const db2 = require('./Middleware/db2')
 const { io } = require('./SocketIo/socketIo');
 
 const errorHandler = require('./Middleware/error')
@@ -29,18 +29,6 @@ const compression = require('compression');
 const connectTosqliteDB = require('./Middleware/sqliteDB.js')
 
 
-
-// require('./cron-jobs'); // We have to test this feature for cron job auto renew
-
-/* Before Live - we will use below corsOption when we go production,we will allow our hosting domain,APIs will only work for our routes
-
-// const corsOptions = {
-//   origin: ['http://localhost:3009'], // use this array when going production
-//   // origin: '*',
-//   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
-// };
-// app.use(cors(corsOptions)); // cors is for cross origin resources for issue with front end backend ports
-*/
 
 app.use(cors()); // cors is for cross origin resources for issue with front end backend ports
 app.use(mongoSanitize()); // Sanitize data
@@ -83,29 +71,6 @@ io.on("connection", async (socket) => {
         if (clientType === 'kitchen_frontend_app') {
             socket.join('kitchen_room');
 
-            // sent data to missed orders when they are connected ,redis or queuing when user connect you sent data and flush that from redis
-            // const KitchenOrderData = await RedisClient.getAsync(`kitchen_frontend_app_${clientTypeName}`)
-            // const KitchenOrderDataArray = KitchenOrderData ? JSON.parse(KitchenOrderData) : []
-            // console.log('---redis data', KitchenOrderData)
-
-            if (!socket.recovered) {
-                // if the connection state recovery was not successful
-
-                console.log('----SOCKET MISSED ROW - 1')
-                try {
-                    await connectTosqliteDB().each('SELECT id, content FROM messages WHERE id > ?',
-                        [socket.handshake.auth.serverOffset || 0],
-                        (_err, row) => {
-                            console.log('----SOCKET MISSED ROW', row)
-                            socket.emit(clientTypeName, JSON.parse(row.content), row.id);
-                        }
-                    )
-                } catch (e) {
-                    // something went wrong
-                }
-            }
-
-
         } else if (clientType === 'customer_frontend_app') {
             socket.join('customer_room');
 
@@ -122,68 +87,8 @@ io.on("connection", async (socket) => {
 
         // Client sending ping message to check connection ,server will reply pong
         socket.on("ping", async () => {
-            console.log(connectionPing(`Received ping from client [${clientType}_${clientTypeName}] , `));
-            socket.emit(`pong-${clientTypeName}`, { data: 'ikram' }); // Reply to ping
-
-
-
-            // const KitchenOrderData = await RedisClient.getAsync(`kitchen_frontend_app_${clientTypeName}`)
-            // const KitchenOrderDataArray = KitchenOrderData ? JSON.parse(KitchenOrderData) : []
-
-
-
-
-            // KitchenOrderDataArray.forEach((order) => {
-            //     socket.emit(clientTypeName, order); // Reply to ping
-            // })
-
-
-
-            // scanKeysByPattern(`kitchen_frontend_app_${clientTypeName}:*`, (err, keys) => {
-            //     if (err) {
-            //         console.error('Scan error:', err);
-            //     } else {
-            //         console.log('Found keys:', keys);
-
-            //         keys.forEach(async (key) => {
-            //             const KitchenOrderData = await RedisClient.getAsync(key)
-            //             socket.emit(clientTypeName, KitchenOrderData); // Reply to ping
-
-            //             await RedisClient.del(key);
-            //         })
-
-            //     }
-            // });
-
-
-
-
-            RedisClient.keys(`kitchen_frontend_app_${clientTypeName}*`, (err, keys) => {
-                if (err) {
-                    console.error('Error fetching keys:', err);
-                } else {
-                    console.log('Found keys:', keys);
-
-                    keys.forEach(async (key) => {
-                        const KitchenOrderData = await RedisClient.getAsync(key)
-                        console.log('---KitchenOrderData', KitchenOrderData)
-                        //socket.emit(clientTypeName, KitchenOrderData); // Reply to ping
-
-
-                        // io.to('kitchen_room').emit(clientTypeName, KitchenOrderData);
-                        const RespoFromUi = socket.emit(`pong-${clientTypeName}`, KitchenOrderData); // Reply to ping
-
-                        if (RespoFromUi) {
-                            await RedisClient.del(key);
-                        }
-
-
-                    })
-
-                }
-            });
-
-
+            console.log(connectionPing(`Received ping from client [${clientType}_${clientTypeName}],`));
+            socket.emit(`pong`); // Reply to ping
 
         });
 
@@ -208,16 +113,6 @@ io.on("connection", async (socket) => {
 
 
 app.use(express.json());
-
-// api key validation
-app.use((req, res, next) => {
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey && apiKey === process.env.X_API_KEY || req.path === '/GenerateApiKey' || req.path.includes('/events')) {
-        next();
-    } else {
-        res.status(200).json({ success: false, CustomMessage: 'Unauthorized' });
-    }
-});
 
 
 
